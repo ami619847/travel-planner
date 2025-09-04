@@ -22,7 +22,7 @@ const tripSchema = new Schema<TripDocument>({
   notes: { type: String },
 });
 
-const TripModel = mongoose.model<TripDocument>("Trip", tripSchema);
+export const TripModel = mongoose.model<TripDocument>("Trip", tripSchema);
 
 // Routes
 app.get("/trips", async (_req: Request, res: Response) => {
