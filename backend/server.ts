@@ -47,6 +47,19 @@ app.post("/trips", async (req: Request, res: Response) => {
   }
 });
 
+app.delete("/trips/:id", async (req: Request, res: Response) => {
+   try {
+    const deleted = await TripModel.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ error: "Trip not found" });
+    }
+    res.json({ message: "Trip deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting trips:", err);
+    res.status(500).json({ error: "Failed to delete trip" });
+  }
+});
+
 // DB connection
 mongoose
   .connect(process.env.MONGO_URI as string)
