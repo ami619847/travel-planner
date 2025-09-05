@@ -1,18 +1,16 @@
-import { useEffect, useState } from "react" ;
+import { useEffect, useState, FormEvent } from "react" ;
 import './App.css'
-import { getTrips, addTrip } from "./api";
-
-interface Trip {
-  _id?: string;
-  destination: string;
-  startDate: Date;
-  endDate: Date;
-  notes?: string;
-}
+import { getTrips, postTrip, deleteTrip } from "./api";
+import { Trip } from "../../types/Trip";
 
 function App() {
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [destination, setDestination] = useState<string>("");
+  const [formData, setFormData] = useState({
+    destination: "",
+    startDate: "",
+    endDate: "",
+    notes: "",
+  });
 
   useEffect(() => {
     getTrips()
@@ -20,86 +18,73 @@ function App() {
       .catch((err) => console.error("Error fetching trips:", err));
   }, []);
 
-  const handleAdd = async () => {
-    if (!destination.trim()) return;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
-    const newTrip: Trip = {
-      destination,
-      startDate: new Date(),
-      endDate: new Date(),
-    };
-
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
     try {
-      const res = await addTrip(newTrip);
-      setTrips((prev) => [...prev, res.data]);
-      setDestination(""); // reset input
-    } catch (error) {
-      console.error("Error adding trip:", error);
+      const tripData = {
+        ...formData,
+        startDate: new Date(formData.startDate),
+        endDate: new Date(formData.endDate),
+      };
+      const res = await postTrip(tripData);
+      setTrips([...trips, res.data]);
+      setFormData({ 
+        destination: "",
+        startDate: "",
+        endDate: "",
+        notes: "" 
+      });
+    } catch (err) {
+      console.error("Error creating trip:", err);
+    }
+  };
+
+  const handleDelete = async (id?: string) => {
+    if (!id) return;
+    try {
+      await deleteTrip(id);
+      setTrips(trips.filter((trip) => trip._id !== id));
+    } catch (err) {
+      console.error("Error deleting trip:", err);
     }
   };
 
   return (
-    <div className="p-4 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-4">🌍 My Trips</h1>
+    <div style={{ padding: "1rem", maxWidth: "600px", margin: "0 auto" }}>
+      <h1>Travel Planner</h1>
 
-      <div className="flex gap-2">
+      <form onSubmit={handleSubmit} style={{ marginBottom: "2rem" }}>
         <input
-          className="flex-1 border rounded p-2"
-          value={destination}
-          onChange={(e) => setDestination(e.target.value)}
-          placeholder="Add destination"
+          type="text"
+          name="destination"
+          placeholder="Destination"
+          value={formData.destination}
+          onChange={handleChange}
+          required
         />
-        <button
-          onClick={handleAdd}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-        >
-          Add
-        </button>
-      </div>
+        <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} required />
+        <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required />
+        <textarea name="notes" placeholder="Notes" value={formData.notes} onChange={handleChange} />
+        <button type="submit">Add Trip</button>
+      </form>
 
-      <ul className="mt-6 space-y-2">
-        { trips.map((t) => (
-          <li
-            key={t._id}
-            className="p-2 border rounded shadow-sm bg-gray-50"
-          >
-            <span className="font-medium">{t.destination}</span>
-            <span className="block text-sm text-gray-500">
-              {new Date(t.startDate).toLocaleDateString()} -{" "}
-              {new Date(t.endDate).toLocaleDateString()}
-            </span>
+      <ul>
+        {trips.map((trip) => (
+          <li key={trip._id} style={{ marginBottom: "1rem" }}>
+            <strong>{trip.destination}</strong> ({new Date(trip.startDate).toLocaleDateString()} → {new Date(trip.endDate).toLocaleDateString()})
+            <br />
+            {trip.notes}
+            <br />
+            <button onClick={() => handleDelete(trip._id!)}>Delete</button>
           </li>
-        )) }
+        ))}
       </ul>
     </div>
   );
-
-//   const [count, setCount] = useState(0)
-
-//   return (
-//     <>
-//       <div>
-//         <a href="https://vite.dev" target="_blank">
-//           <img src={viteLogo} className="logo" alt="Vite logo" />
-//         </a>
-//         <a href="https://react.dev" target="_blank">
-//           <img src={reactLogo} className="logo react" alt="React logo" />
-//         </a>
-//       </div>
-//       <h1>Vite + React</h1>
-//       <div className="card">
-//         <button onClick={() => setCount((count) => count + 1)}>
-//           count is {count}
-//         </button>
-//         <p>
-//           Edit <code>src/App.tsx</code> and save to test HMR
-//         </p>
-//       </div>
-//       <p className="read-the-docs">
-//         Click on the Vite and React logos to learn more
-//       </p>
-//     </>
-//   )
 }
 
 export default App

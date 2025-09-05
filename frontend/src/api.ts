@@ -11,6 +11,11 @@ export const getTrips = async (): Promise<AxiosResponse<Trip[]>> => {
 };
 
 // Add a new trip
-export const addTrip = async (trip: Trip): Promise<AxiosResponse<Trip>> => {
+export const postTrip = async (trip: Omit<Trip, "_id">): Promise<AxiosResponse<Trip>> => {
   return API.post<Trip>("/trips", trip);
+};
+
+// Delete trip
+export const deleteTrip = async (id: string): Promise<AxiosResponse<{ message: string }>> => {
+  return API.delete(`/trips/${id}`);
 };
