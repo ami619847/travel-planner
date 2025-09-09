@@ -19,10 +19,6 @@ function App() {
       .catch((err) => console.error("Error fetching trips:", err));
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     try {
@@ -68,72 +64,147 @@ function App() {
 };
 
   return (
-    <div style={{ padding: "1rem", maxWidth: "600px", margin: "0 auto" }}>
-      <h1>Travel Planner</h1>
+    <div className="max-w-2xl mx-auto p-6">
+      <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">Travel Planner</h1>
 
-      <form onSubmit={handleSubmit} style={{ marginBottom: "2rem" }}>
+      {/* Add trip form */}
+      <form 
+        onSubmit={handleSubmit}
+        className="flex flex-col gap-3 p-4 bg-gray-50 rounded-lg shadow"
+      >
         <input
           type="text"
-          name="destination"
+          className="p-2 border rounded"
           placeholder="Destination"
           value={formData.destination}
-          onChange={handleChange}
+          onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
           required
         />
-        <input type="date" name="startDate" value={formData.startDate} onChange={handleChange} required />
-        <input type="date" name="endDate" value={formData.endDate} onChange={handleChange} required />
-        <textarea name="notes" placeholder="Notes" value={formData.notes} onChange={handleChange} />
-        <button type="submit">Add Trip</button>
+        <div className="flex gap-2">
+          <input
+            type="date"
+            className="p-2 border rounded w-1/2"
+            value={formData.startDate}
+            onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+            required
+          />
+          <input
+            type="date"
+            className="p-2 border rounded w-1/2"
+            value={formData.endDate}
+            onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+            required
+          />
+        </div>
+        <textarea
+          placeholder="Notes"
+          value={formData.notes}
+          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          className="p-2 border rounded"
+        />
+        <button
+          type="submit"
+          className="bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 rounded"
+        >
+          Add Trip
+        </button>
       </form>
 
-      <ul>
+      {/* Edit trip form */}
+      {editingTrip && (
+        <form
+          onSubmit={handleUpdate}
+          className="flex flex-col gap-3 p-4 bg-yellow-50 rounded-lg shadow mt-6"
+        >
+          <h2 className="text-xl font-semibold text-yellow-600">Edit Trip</h2>
+          <input
+            type="text"
+            value={editingTrip.destination}
+            onChange={(e) =>
+              setEditingTrip({ ...editingTrip, destination: e.target.value })
+            }
+            className="p-2 border rounded"
+            required
+          />
+          <div className="flex gap-2">
+            <input
+              type="date"
+              value={editingTrip?.startDate
+                  ? new Date(editingTrip.startDate).toISOString().split("T")[0]
+                  : ""}
+              onChange={(e) =>
+                setEditingTrip({ ...editingTrip, startDate: e.target.value })
+              }
+              className="p-2 border rounded w-1/2"
+              required
+            />
+            <input
+              type="date"
+              value={editingTrip?.endDate
+                  ? new Date(editingTrip.endDate).toISOString().split("T")[0]
+                  : ""}
+              onChange={(e) =>
+                setEditingTrip({ ...editingTrip, endDate: e.target.value })
+              }
+              className="p-2 border rounded w-1/2"
+              required
+            />
+          </div>
+          <textarea
+            value={editingTrip?.notes || ""}
+            onChange={(e) =>
+              setEditingTrip({ ...editingTrip, notes: e.target.value })
+            }
+            className="p-2 border rounded"
+          />
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 rounded flex-1"
+            >
+              Save
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditingTrip(null)}
+              className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 rounded flex-1"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Trip list */}
+      <ul className="grid gap-4 mt-6">
         {trips.map((trip) => (
-          <li key={trip._id}>
-            {editingTrip?._id === trip._id ? (
-              <form onSubmit={handleUpdate}>
-                <input
-                  value={editingTrip?.destination || ""}
-                  onChange={(e) =>
-                    editingTrip && setEditingTrip({ ...editingTrip, destination: e.target.value })
-                  }
-                />
-                <input
-                  type="date"
-                  value={editingTrip?.startDate
-                    ? new Date(editingTrip.startDate).toISOString().split("T")[0]
-                    : ""}
-                  onChange={(e) =>
-                    editingTrip && setEditingTrip({ ...editingTrip, startDate: e.target.value })
-                  }
-                />
-                <input
-                  type="date"
-                  value={editingTrip?.endDate
-                    ? new Date(editingTrip.endDate).toISOString().split("T")[0]
-                    : ""}
-                  onChange={(e) =>
-                    editingTrip && setEditingTrip({ ...editingTrip, endDate: e.target.value })
-                  }
-                />
-                <input
-                  value={editingTrip?.notes || ""}
-                  onChange={(e) =>
-                    editingTrip && setEditingTrip({ ...editingTrip, notes: e.target.value })
-                  }
-                />
-                <button type="submit">Save</button>
-                <button type="button" onClick={() => setEditingTrip(null)}>
-                  Cancel
+          <li 
+            key={trip._id}
+            className="p-4 bg-white shadow rounded-xl border flex flex-col gap-2"
+          >
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-semibold text-blue-600">
+                {trip.destination}
+              </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingTrip(trip)}
+                  className="px-3 py-1 text-sm bg-yellow-400 hover:bg-yellow-500 text-black font-semibold rounded"
+                >
+                  Edit
                 </button>
-              </form>
-            ) : (
-              <>
-                <strong>{trip.destination}</strong> ({trip.startDate} →{" "}
-                {trip.endDate}) - {trip.notes}
-                <button onClick={() => setEditingTrip(trip)}>Edit</button>
-                <button onClick={() => handleDelete(trip._id!)}>Delete</button>
-              </>
-            )}
+                <button
+                  onClick={() => handleDelete(trip._id!)}
+                  className="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white font-semibold rounded"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+            <p className="text-gray-600 text-sm">
+              {trip.startDate} → {trip.endDate}
+            </p>
+            {trip.notes && <p className="text-gray-800 italic">{trip.notes}</p>}
           </li>
         ))}
       </ul>
