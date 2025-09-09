@@ -7,7 +7,7 @@ Built with **React, Node.js, Express, and MongoDB**.
 - Add and view trips
 - Store data in MongoDB
 - Responsive design with TailwindCSS
-- (Future) Edit/Delete trips
+- Edit/Delete trips
 - (Future) Authentication
 
 ## Tech Stack

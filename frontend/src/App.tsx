@@ -1,6 +1,6 @@
 import { useEffect, useState, FormEvent } from "react" ;
 import './App.css'
-import { getTrips, postTrip, deleteTrip } from "./api";
+import { getTrips, postTrip, deleteTrip, updateTrip } from "./api";
 import { Trip } from "../../types/Trip";
 
 function App() {
@@ -11,6 +11,7 @@ function App() {
     endDate: "",
     notes: "",
   });
+  const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
 
   useEffect(() => {
     getTrips()
@@ -27,8 +28,8 @@ function App() {
     try {
       const tripData = {
         ...formData,
-        startDate: new Date(formData.startDate),
-        endDate: new Date(formData.endDate),
+        startDate: formData.startDate,
+        endDate: formData.endDate,
       };
       const res = await postTrip(tripData);
       setTrips([...trips, res.data]);
@@ -53,6 +54,19 @@ function App() {
     }
   };
 
+  const handleUpdate = async (e: FormEvent) => {
+  e.preventDefault();
+  if (!editingTrip) return;
+
+  try {
+    const res = await updateTrip(editingTrip._id!, editingTrip);
+    setTrips(trips.map((t) => (t._id === editingTrip._id ? res.data : t)));
+    setEditingTrip(null); // reset editing mode
+  } catch (err) {
+    console.error("Error updating trip:", err);
+  }
+};
+
   return (
     <div style={{ padding: "1rem", maxWidth: "600px", margin: "0 auto" }}>
       <h1>Travel Planner</h1>
@@ -74,12 +88,52 @@ function App() {
 
       <ul>
         {trips.map((trip) => (
-          <li key={trip._id} style={{ marginBottom: "1rem" }}>
-            <strong>{trip.destination}</strong> ({new Date(trip.startDate).toLocaleDateString()} → {new Date(trip.endDate).toLocaleDateString()})
-            <br />
-            {trip.notes}
-            <br />
-            <button onClick={() => handleDelete(trip._id!)}>Delete</button>
+          <li key={trip._id}>
+            {editingTrip?._id === trip._id ? (
+              <form onSubmit={handleUpdate}>
+                <input
+                  value={editingTrip?.destination || ""}
+                  onChange={(e) =>
+                    editingTrip && setEditingTrip({ ...editingTrip, destination: e.target.value })
+                  }
+                />
+                <input
+                  type="date"
+                  value={editingTrip?.startDate
+                    ? new Date(editingTrip.startDate).toISOString().split("T")[0]
+                    : ""}
+                  onChange={(e) =>
+                    editingTrip && setEditingTrip({ ...editingTrip, startDate: e.target.value })
+                  }
+                />
+                <input
+                  type="date"
+                  value={editingTrip?.endDate
+                    ? new Date(editingTrip.endDate).toISOString().split("T")[0]
+                    : ""}
+                  onChange={(e) =>
+                    editingTrip && setEditingTrip({ ...editingTrip, endDate: e.target.value })
+                  }
+                />
+                <input
+                  value={editingTrip?.notes || ""}
+                  onChange={(e) =>
+                    editingTrip && setEditingTrip({ ...editingTrip, notes: e.target.value })
+                  }
+                />
+                <button type="submit">Save</button>
+                <button type="button" onClick={() => setEditingTrip(null)}>
+                  Cancel
+                </button>
+              </form>
+            ) : (
+              <>
+                <strong>{trip.destination}</strong> ({trip.startDate} →{" "}
+                {trip.endDate}) - {trip.notes}
+                <button onClick={() => setEditingTrip(trip)}>Edit</button>
+                <button onClick={() => handleDelete(trip._id!)}>Delete</button>
+              </>
+            )}
           </li>
         ))}
       </ul>

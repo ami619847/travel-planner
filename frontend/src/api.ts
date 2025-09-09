@@ -19,3 +19,8 @@ export const postTrip = async (trip: Omit<Trip, "_id">): Promise<AxiosResponse<T
 export const deleteTrip = async (id: string): Promise<AxiosResponse<{ message: string }>> => {
   return API.delete(`/trips/${id}`);
 };
+
+// Update trip
+export const updateTrip = async (id: string, trip: Partial<Trip>): Promise<AxiosResponse<Trip>> => {
+  return API.put<Trip>(`/trips/${id}`, trip);
+};
