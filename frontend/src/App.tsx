@@ -55,17 +55,31 @@ function App() {
   };
 
   const handleUpdate = async (e: FormEvent) => {
-  e.preventDefault();
-  if (!editingTrip) return;
+    e.preventDefault();
+    if (!editingTrip) return;
 
-  try {
-    const res = await updateTrip(editingTrip._id!, editingTrip);
-    setTrips(trips.map((t) => (t._id === editingTrip._id ? res.data : t)));
-    setEditingTrip(null); // reset editing mode
-  } catch (err) {
-    console.error("Error updating trip:", err);
+    try {
+      const res = await updateTrip(editingTrip._id!, editingTrip);
+      setTrips(trips.map((t) => (t._id === editingTrip._id ? res.data : t)));
+      setEditingTrip(null); // reset editing mode
+    } catch (err) {
+      console.error("Error updating trip:", err);
+    }
+  };
+
+  function highlightMatch(text: string, query: string) {
+    if (!query) return text;
+    const regex = new RegExp(`(${query})`, "gi");
+    return text.split(regex).map((part, index) =>
+      regex.test(part) ? (
+        <span key={index} className="bg-yellow-200 font-semibold">
+          {part}
+        </span>
+      ) : (
+        part
+      )
+    );
   }
-};
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-gray-100 min-h-screen">
@@ -73,7 +87,8 @@ function App() {
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3 bg-gray-100 p-3 rounded-lg">
-        <div className="flex gap-2">
+        {/* Filter */}
+        <div className="flex gap-2 justify-center sm:justify-start">
           <button
             onClick={() => setFilter("all")}
             className={`px-3 py-1 rounded font-semibold ${
@@ -101,18 +116,18 @@ function App() {
         </div>
 
         {/* Search Box */}
-        <div className="flex-1 max-w-xs mx-auto">
+        <div className="w-full sm:flex-1 sm:max-w-md mx-auto sm:mx-0">
           <input
             type="text"
             placeholder="Search by destination..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-3 py-1 border rounded-lg text-gray-700"
+            className="w-full px-3 py-2 border rounded-lg text-gray-700"
           />
         </div>
 
         {/* Sort by date */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 justify-center sm:justify-end">
           <button
             onClick={() => setSortOrder("asc")}
             className={`px-3 py-1 rounded font-semibold ${
@@ -281,8 +296,8 @@ function App() {
                 className="p-4 bg-white shadow rounded-xl border flex flex-col gap-2"
               >
                 <div className="flex justify-between items-center">
-                  <h2 className="text-lg font-semibold text-blue-600">
-                    {trip.destination}
+                  <h2 className="text-xl font-semibold mb-2">
+                    {highlightMatch(trip.destination, searchTerm)}
                   </h2>
                   <div className="flex gap-2">
                     <button
