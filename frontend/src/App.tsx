@@ -256,7 +256,7 @@ function App() {
       )}
 
       {/* Trip list */}
-      <ul className="grid gap-4 mt-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {trips
           .filter((trip) => {
             const end = new Date(trip.endDate);
@@ -277,65 +277,63 @@ function App() {
             return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
           })
           .map((trip) => {
-            const start = new Date(trip.startDate);
-            const end = new Date(trip.endDate);
-
-            // Format dates
-            const formattedStart = format(start, "MMM d, yyyy");
-            const formattedEnd = format(end, "MMM d, yyyy");
-
-            // Calculate duration
-            const duration = differenceInDays(end, start) + 1;
-
-            // Check if trip is past or upcoming
-            const isPast = isBefore(end, new Date());
-
             return (
-              <li 
+              <div
                 key={trip._id}
-                className="p-4 bg-white shadow rounded-xl border flex flex-col gap-2"
+                className="bg-white shadow-md rounded-lg p-4 border hover:shadow-lg transition flex flex-col justify-between"
               >
-                <div className="flex justify-between items-center">
-                  <h2 className="text-xl font-semibold mb-2">
+                {/* Destination + Status */}
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="text-xl font-semibold text-gray-800">
                     {highlightMatch(trip.destination, searchTerm)}
                   </h2>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setEditingTrip(trip)}
-                      className="px-3 py-1 text-sm bg-yellow-400 hover:bg-yellow-500 text-black font-semibold rounded"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(trip._id!)}
-                      className="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white font-semibold rounded"
-                    >
-                      Delete
-                    </button>
-                  </div>
+                  <span
+                    className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                      isBefore(new Date(trip.endDate), new Date())
+                        ? "bg-gray-200 text-gray-600"
+                        : "bg-green-200 text-green-800"
+                    }`}
+                  >
+                    {isBefore(new Date(trip.endDate), new Date()) ? "Past" : "Upcoming"}
+                  </span>
                 </div>
 
-                {/* Dates + Duration */}
-                <p className="text-gray-600 text-sm">
-                  {formattedStart} → {formattedEnd} ({duration} days)
+                {/* Dates & Duration */}
+                <p className="text-sm text-gray-600">
+                  {format(new Date(trip.startDate), "MMM d, yyyy")} →{" "}
+                  {format(new Date(trip.endDate), "MMM d, yyyy")}
+                </p>
+                <p className="text-sm text-gray-500 mb-3">
+                  {differenceInDays(new Date(trip.endDate), new Date(trip.startDate)) + 1}{" "}
+                  days
                 </p>
 
-                {/* Trip status */}
-                <span
-                  className={`inline-block px-2 py-1 text-xs rounded-full font-semibold w-fit
-                    ${isPast ? "bg-gray-300 text-gray-700" : "bg-green-200 text-green-800"}`}
-                >
-                  {isPast ? "Past Trip" : "Upcoming Trip"}
-                </span>
-
+                {/* Notes */}
                 {trip.notes && (
-                  <p className="text-gray-800 italic">{trip.notes}</p>
+                  <p className="text-sm text-gray-700 italic mb-3">“{trip.notes}”</p>
                 )}
-              </li>
+
+                {/* Actions */}
+                <div className="flex gap-2 mt-auto">
+                  <button
+                    onClick={() => setEditingTrip(trip)}
+                    className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+                  >
+                    Edit
+                  </button>
+                  
+                  <button
+                    onClick={() => handleDelete(trip._id!)}
+                    className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
             );
           })
         }
-      </ul>
+      </div>
     </div>
   );
 }
