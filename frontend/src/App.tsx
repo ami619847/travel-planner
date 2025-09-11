@@ -15,6 +15,7 @@ function App() {
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("upcoming");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     getTrips()
@@ -71,8 +72,7 @@ function App() {
       <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">Travel Planner</h1>
 
       {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between mb-6 gap-3 bg-gray-100 p-3 rounded-lg">
-        {/* Filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3 bg-gray-100 p-3 rounded-lg">
         <div className="flex gap-2">
           <button
             onClick={() => setFilter("all")}
@@ -98,6 +98,17 @@ function App() {
           >
             Past
           </button>
+        </div>
+
+        {/* Search Box */}
+        <div className="flex-1 max-w-xs mx-auto">
+          <input
+            type="text"
+            placeholder="Search by destination..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-3 py-1 border rounded-lg text-gray-700"
+          />
         </div>
 
         {/* Sort by date */}
@@ -235,9 +246,14 @@ function App() {
           .filter((trip) => {
             const end = new Date(trip.endDate);
             const isPast = isBefore(end, new Date());
-            if (filter  === "all") return true;
-            if (filter === "upcoming") return !isPast;
-            if (filter === "past") return isPast;
+
+            // Filter by Upcoming/Past/All
+            if (filter === "upcoming" && isPast) return false;
+            if (filter === "past" && !isPast) return false;
+            // Search by destination
+            if (searchTerm && !trip.destination.toLowerCase().includes(searchTerm.toLowerCase())) {
+              return false;
+            }
             return true;
           })
           .sort((a, b) => {
