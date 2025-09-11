@@ -2,6 +2,7 @@ import { useEffect, useState, FormEvent } from "react" ;
 import './App.css'
 import { getTrips, postTrip, deleteTrip, updateTrip } from "./api";
 import { Trip } from "../../types/Trip";
+import { format, differenceInDays, isBefore } from "date-fns";
 
 function App() {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -12,6 +13,8 @@ function App() {
     notes: "",
   });
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
+  const [filter, setFilter] = useState<"all" | "upcoming" | "past">("upcoming");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     getTrips()
@@ -64,8 +67,59 @@ function App() {
 };
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
+    <div className="max-w-2xl mx-auto p-6 bg-gray-100 min-h-screen">
       <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">Travel Planner</h1>
+
+      {/* Toolbar */}
+      <div className="flex flex-wrap items-center justify-between mb-6 gap-3 bg-gray-100 p-3 rounded-lg">
+        {/* Filter */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setFilter("all")}
+            className={`px-3 py-1 rounded font-semibold ${
+              filter === "all" ? "bg-blue-600 text-white" : "bg-white text-gray-700 border"
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setFilter("upcoming")}
+            className={`px-3 py-1 rounded font-semibold ${
+              filter === "upcoming" ? "bg-blue-600 text-white" : "bg-white text-gray-700 border"
+            }`}
+          >
+            Upcoming
+          </button>
+          <button
+            onClick={() => setFilter("past")}
+            className={`px-3 py-1 rounded font-semibold ${
+              filter === "past" ? "bg-blue-600 text-white" : "bg-white text-gray-700 border"
+            }`}
+          >
+            Past
+          </button>
+        </div>
+
+        {/* Sort by date */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setSortOrder("asc")}
+            className={`px-3 py-1 rounded font-semibold ${
+              sortOrder === "asc" ? "bg-blue-600 text-white" : "bg-white text-gray-700 border"
+            }`}
+          >
+            Sort: Oldest First
+          </button>
+          <button
+            onClick={() => setSortOrder("desc")}
+            className={`px-3 py-1 rounded font-semibold ${
+              sortOrder === "desc" ? "bg-blue-600 text-white" : "bg-white text-gray-700 border"
+            }`}
+          >
+            Sort: Newest First
+          </button>
+        </div>
+      </div>
 
       {/* Add trip form */}
       <form 
@@ -177,36 +231,79 @@ function App() {
 
       {/* Trip list */}
       <ul className="grid gap-4 mt-6">
-        {trips.map((trip) => (
-          <li 
-            key={trip._id}
-            className="p-4 bg-white shadow rounded-xl border flex flex-col gap-2"
-          >
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-blue-600">
-                {trip.destination}
-              </h2>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setEditingTrip(trip)}
-                  className="px-3 py-1 text-sm bg-yellow-400 hover:bg-yellow-500 text-black font-semibold rounded"
+        {trips
+          .filter((trip) => {
+            const end = new Date(trip.endDate);
+            const isPast = isBefore(end, new Date());
+            if (filter  === "all") return true;
+            if (filter === "upcoming") return !isPast;
+            if (filter === "past") return isPast;
+            return true;
+          })
+          .sort((a, b) => {
+            const dateA = new Date(a.startDate).getTime();
+            const dateB = new Date(b.startDate).getTime();
+            return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
+          })
+          .map((trip) => {
+            const start = new Date(trip.startDate);
+            const end = new Date(trip.endDate);
+
+            // Format dates
+            const formattedStart = format(start, "MMM d, yyyy");
+            const formattedEnd = format(end, "MMM d, yyyy");
+
+            // Calculate duration
+            const duration = differenceInDays(end, start) + 1;
+
+            // Check if trip is past or upcoming
+            const isPast = isBefore(end, new Date());
+
+            return (
+              <li 
+                key={trip._id}
+                className="p-4 bg-white shadow rounded-xl border flex flex-col gap-2"
+              >
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg font-semibold text-blue-600">
+                    {trip.destination}
+                  </h2>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingTrip(trip)}
+                      className="px-3 py-1 text-sm bg-yellow-400 hover:bg-yellow-500 text-black font-semibold rounded"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(trip._id!)}
+                      className="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white font-semibold rounded"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+
+                {/* Dates + Duration */}
+                <p className="text-gray-600 text-sm">
+                  {formattedStart} → {formattedEnd} ({duration} days)
+                </p>
+
+                {/* Trip status */}
+                <span
+                  className={`inline-block px-2 py-1 text-xs rounded-full font-semibold w-fit
+                    ${isPast ? "bg-gray-300 text-gray-700" : "bg-green-200 text-green-800"}`}
                 >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(trip._id!)}
-                  className="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white font-semibold rounded"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-            <p className="text-gray-600 text-sm">
-              {trip.startDate} → {trip.endDate}
-            </p>
-            {trip.notes && <p className="text-gray-800 italic">{trip.notes}</p>}
-          </li>
-        ))}
+                  {isPast ? "Past Trip" : "Upcoming Trip"}
+                </span>
+
+                {trip.notes && (
+                  <p className="text-gray-800 italic">{trip.notes}</p>
+                )}
+              </li>
+            );
+          })
+        }
       </ul>
     </div>
   );
