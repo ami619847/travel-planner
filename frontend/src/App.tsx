@@ -16,11 +16,24 @@ function App() {
   const [filter, setFilter] = useState<"all" | "upcoming" | "past">("upcoming");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
 
   useEffect(() => {
     getTrips()
       .then((res) => setTrips(res.data))
       .catch((err) => console.error("Error fetching trips:", err));
+
+    // Close modal on Esc key
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setSelectedTrip(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleEsc);
+    return () => {
+      window.removeEventListener("keydown", handleEsc);
+    };
   }, []);
 
   const handleSubmit = async (e: FormEvent) => {
@@ -281,6 +294,7 @@ function App() {
               <div
                 key={trip._id}
                 className="bg-white shadow-md rounded-lg p-4 border hover:shadow-lg transition flex flex-col justify-between"
+                onClick={() => setSelectedTrip(trip)}
               >
                 {/* Destination + Status */}
                 <div className="flex items-center justify-between mb-2">
@@ -316,7 +330,10 @@ function App() {
                 {/* Actions */}
                 <div className="flex gap-2 mt-auto">
                   <button
-                    onClick={() => setEditingTrip(trip)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingTrip(trip);
+                    }}
                     className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
                   >
                     Edit
@@ -334,6 +351,67 @@ function App() {
           })
         }
       </div>
+      {selectedTrip && (
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+          onClick={() => setSelectedTrip(null)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setSelectedTrip(null)}
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+
+            {/* Trip Details */}
+            <h2 className="text-2xl font-bold mb-4">{selectedTrip.destination}</h2>
+            <p className="text-gray-600 mb-1">
+              {format(new Date(selectedTrip.startDate), "MMM d, yyyy")} →{" "}
+              {format(new Date(selectedTrip.endDate), "MMM d, yyyy")}
+            </p>
+            <p className="text-gray-500 mb-3">
+              {differenceInDays(
+                new Date(selectedTrip.endDate),
+                new Date(selectedTrip.startDate)
+              ) + 1}{" "}
+              days
+            </p>
+
+            {selectedTrip.notes && (
+              <p className="italic text-gray-700 mb-4">“{selectedTrip.notes}”</p>
+            )}
+
+            {/* Actions inside modal */}
+            <div className="flex gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setEditingTrip(selectedTrip);
+                  setSelectedTrip(null);
+                }}
+                className="px-3 py-1 bg-yellow-500 text-white rounded hover:bg-yellow-600"
+              >
+                Edit
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteTrip(selectedTrip._id!);
+                  setSelectedTrip(null);
+                }}
+                className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
