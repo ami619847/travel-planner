@@ -66,7 +66,10 @@ export default function TripCard({
                     Edit
                 </button>
                 <button
-                    onClick={() => onDelete(trip._id!)}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(trip._id!)
+                    }}   
                     className="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600"
                 >
                     Delete
