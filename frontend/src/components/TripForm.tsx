@@ -21,6 +21,8 @@ export default function TripForm({
     notes: "",
   });
 
+  const [error, setError] = useState<string | null>(null);
+
   // sync form with editingTrip when editing
   useEffect(() => {
     if (editingTrip) {
@@ -43,17 +45,33 @@ export default function TripForm({
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
+     // Convert string dates → Date objects
+    const formattedData = {
+      destination: formData.destination,
+      startDate: new Date(formData.startDate),
+      endDate: new Date(formData.endDate),
+      notes: formData.notes,
+    };
+
+    // date validation
+    if (new Date(formData.endDate) < new Date(formData.startDate)) {
+      setError("End date cannot be before start date.");
+      return;
+    }
+
+    setError(null);
+
     if (editingTrip) {
       // Update existing
       onUpdateTrip({
         ...editingTrip,
-        ...formData,
+        ...formattedData,
       });
       setEditingTrip(null);
     } else {
       // Add new
       onAddTrip({
-        ...formData,
+        ...formattedData,
       } as Omit<Trip, "_id">);
     }
 
@@ -108,6 +126,9 @@ export default function TripForm({
         className="p-2 border rounded"
       />
 
+      {/* Error message */}
+      {error && <p className="text-red-500 text-sm">{error}</p>}
+
       <div className="flex gap-2">
         <button
           type="submit"
@@ -132,112 +153,3 @@ export default function TripForm({
     </form>
   );
 }
-
-// import React, { useEffect, useState } from "react";
-// import { Trip, NewTrip } from "../../../types/Trip";
-
-// interface TripFormProps {
-//     editingTrip: Trip | null;
-//     onAddTrip: (trip: NewTrip) => void;
-//     onUpdateTrip: (id: string, trip: NewTrip) => void;
-//     onCancelEdit: () => void; // <-- new prop
-// }
-
-// export default function TripForm({ editingTrip, onAddTrip, onUpdateTrip, onCancelEdit }: TripFormProps) {
-//     const [formData, setFormData] = useState<NewTrip>({
-//         destination: "",
-//         startDate: "",
-//         endDate: "",
-//         notes: "",
-//     });
-
-//     useEffect(() => {
-//         if (editingTrip) {
-//             setFormData({
-//                 destination: editingTrip.destination,
-//                 startDate: editingTrip.startDate,
-//                 endDate: editingTrip.endDate,
-//                 notes: editingTrip.notes || "",
-//             });
-//         } else {
-//             setFormData({ destination: "", startDate: "", endDate: "", notes: "" });
-//         }
-//     }, [editingTrip]);
-
-//     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-//         const { name, value } = e.target;
-//         setFormData((prev) => ({ ...prev, [name]: value }));
-//     };
-
-//     const handleSubmit = (e: React.FormEvent) => {
-//         e.preventDefault();
-//         if (!formData.destination || !formData.startDate || !formData.endDate) return;
-
-//         if (editingTrip && editingTrip._id) {
-//             onUpdateTrip(editingTrip._id, formData);
-//         } else {
-//             onAddTrip(formData);
-//         }
-
-//         setFormData({ destination: "", startDate: "", endDate: "", notes: "" });
-//     };
-
-//     return (
-//         <form onSubmit={handleSubmit} className="mb-6 p-4 border rounded-lg shadow">
-//             <h2 className="text-xl font-semibold mb-4">
-//                 {editingTrip ? "Edit Trip" : "Add Trip"}
-//             </h2>
-
-//             <input
-//                 name="destination"
-//                 type="text"
-//                 placeholder="Destination"
-//                 value={formData.destination}
-//                 onChange={handleChange}
-//                 required
-//                 className="w-full p-2 mb-3 border rounded"
-//             />
-
-//             <input
-//                 name="startDate"
-//                 type="date"
-//                 value={formData.startDate}
-//                 onChange={handleChange}
-//                 required
-//                 className="w-full p-2 mb-3 border rounded"
-//             />
-
-//             <input
-//                 name="endDate"
-//                 type="date"
-//                 value={formData.endDate}
-//                 onChange={handleChange}
-//                 required
-//                 className="w-full p-2 mb-3 border rounded"
-//             />
-
-//             <textarea
-//                 name="notes"
-//                 placeholder="Notes (optional)"
-//                 value={formData.notes}
-//                 onChange={handleChange}
-//                 className="w-full p-2 mb-3 border rounded"
-//             />
-
-//             <div className="flex gap-3">
-//                 <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded">
-//                     {editingTrip ? "Update Trip" : "Add Trip"}
-//                 </button>
-//                 {editingTrip && (
-//                     <button
-//                         type="button"
-//                         onClick={onCancelEdit} // <-- call parent to exit edit mode
-//                         className="px-4 py-2 bg-gray-500 text-white rounded"
-//                     >
-//                         Cancel
-//                     </button>
-//                 )}
-//             </div>
-//         </form>
-//     );
-// }
