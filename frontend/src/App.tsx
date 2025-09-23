@@ -13,11 +13,22 @@ function App() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getTrips()
-      .then((res) => setTrips(res.data))
-      .catch((err) => console.error("Error fetching trips:", err));
+    const fetchTrips = async () => {
+      try {
+        setLoading(true); // start spinner
+        const res = await getTrips();
+        setTrips(res.data);
+      } catch (err) {
+        console.error("Error fetching trips:", err);
+      } finally {
+        setLoading(false); // stop spinner
+      }
+    };
+    
+    fetchTrips();
   }, []);
 
   const handleAddTrip = async (formData: Omit<Trip, "_id">) => {
@@ -146,6 +157,7 @@ function App() {
         onDelete={handleDelete}
         onSelect={setSelectedTrip}
         highlightMatch={highlightMatch}
+        loading={loading}
       />
 
       {selectedTrip && (
