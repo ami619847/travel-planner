@@ -19,6 +19,8 @@ export default function TripForm({
     startDate: "",
     endDate: "",
     notes: "",
+    latitude: "",
+    longitude: "",
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -31,6 +33,8 @@ export default function TripForm({
         startDate: new Date(editingTrip.startDate).toISOString().split("T")[0],
         endDate: new Date(editingTrip.endDate).toISOString().split("T")[0],
         notes: editingTrip.notes || "",
+        latitude: editingTrip.latitude?.toString() || "",
+        longitude: editingTrip.longitude?.toString() || "",
       });
     } else {
       setFormData({
@@ -38,6 +42,8 @@ export default function TripForm({
         startDate: "",
         endDate: "",
         notes: "",
+        latitude: "",
+        longitude: "",
       });
     }
   }, [editingTrip]);
@@ -51,6 +57,8 @@ export default function TripForm({
       startDate: new Date(formData.startDate),
       endDate: new Date(formData.endDate),
       notes: formData.notes,
+      latitude: parseFloat(formData.latitude),
+      longitude: parseFloat(formData.longitude),
     };
 
     // date validation
@@ -61,17 +69,29 @@ export default function TripForm({
 
     setError(null);
 
+    const parsedLatitude = parseFloat(formData.latitude);
+    const parsedLongitude = parseFloat(formData.longitude);
+
+    if (isNaN(parsedLatitude) || isNaN(parsedLongitude)) {
+      alert("Please enter valid latitude and longitude values.");
+      return;
+    }
+
     if (editingTrip) {
       // Update existing
       onUpdateTrip({
         ...editingTrip,
         ...formattedData,
+        latitude: parsedLatitude,
+        longitude: parsedLongitude,
       });
       setEditingTrip(null);
     } else {
       // Add new
       onAddTrip({
         ...formattedData,
+        latitude: parsedLatitude,
+        longitude: parsedLongitude,
       } as Omit<Trip, "_id">);
     }
 
@@ -81,6 +101,8 @@ export default function TripForm({
       startDate: "",
       endDate: "",
       notes: "",
+      latitude: "",
+      longitude: "",
     });
   };
 
@@ -125,6 +147,28 @@ export default function TripForm({
         onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
         className="p-2 border rounded"
       />
+
+      {/* Latitude & Longitude fields */}
+      <div className="flex gap-2">
+        <input
+          type="number"
+          step="any"
+          placeholder="Latitude"
+          value={formData.latitude}
+          onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+          className="p-2 border rounded w-1/2"
+          required
+        />
+        <input
+          type="number"
+          step="any"
+          placeholder="Longitude"
+          value={formData.longitude}
+          onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+          className="p-2 border rounded w-1/2"
+          required
+        />
+      </div>
 
       {/* Error message */}
       {error && <p className="text-red-500 text-sm">{error}</p>}

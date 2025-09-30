@@ -5,6 +5,7 @@ import { Trip } from "../../types/Trip";
 import TripModal from "./components/TripModal";
 import TripList from "./components/TripList";
 import TripForm from "./components/TripForm";
+import MapView from "./components/MapView";
 
 function App() {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -27,7 +28,7 @@ function App() {
         setLoading(false); // stop spinner
       }
     };
-    
+
     fetchTrips();
   }, []);
 
@@ -168,6 +169,8 @@ function App() {
           onDelete={handleDelete}
         />
       )}
+
+      <MapView trips={trips} selectedTrip={selectedTrip} />
     </div>
   );
 }

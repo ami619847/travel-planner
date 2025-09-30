@@ -26,7 +26,15 @@ const tripSchema = new Schema<ITrip>({
   notes: { 
     type: String,
     maxlength: [500, "Notes cannot exceed 500 characters"],
-   },
+  },
+  latitude: { 
+    type: Number,
+    required: true
+  },
+  longitude: { 
+    type: Number,
+    required: true
+  },
 });
 
 export const TripModel = mongoose.model<ITrip>("Trip", tripSchema);
