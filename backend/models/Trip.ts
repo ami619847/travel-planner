@@ -29,11 +29,11 @@ const tripSchema = new Schema<ITrip>({
   },
   latitude: { 
     type: Number,
-    required: true
+    required: false
   },
   longitude: { 
     type: Number,
-    required: true
+    required: false
   },
 });
 

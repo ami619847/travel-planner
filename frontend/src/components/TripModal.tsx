@@ -1,6 +1,17 @@
 import { Trip } from "../../../types/Trip";
 import { format, differenceInDays } from "date-fns";
 import { useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import L from "leaflet";
+
+// Fix for default Leaflet marker icons
+const defaultIcon = new L.Icon({
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+});
+L.Marker.prototype.options.icon = defaultIcon;
 
 interface TripModalProps {
     selectedTrip: Trip;
@@ -11,6 +22,7 @@ interface TripModalProps {
 
 export default function TripModal({ selectedTrip, onClose, onEdit, onDelete }: TripModalProps) {
     // Close modal on Esc key
+    // disable scroll when modal open
     useEffect(() => {
         const handleEsc = (event: KeyboardEvent) => {
             if (event.key === "Escape") {
@@ -19,8 +31,11 @@ export default function TripModal({ selectedTrip, onClose, onEdit, onDelete }: T
         };
 
         window.addEventListener("keydown", handleEsc);
+        document.body.style.overflow = "hidden"; // disable scroll
+
         return () => {
             window.removeEventListener("keydown", handleEsc);
+            document.body.style.overflow = "auto"; // restore scroll
         };
     }, [onClose]);
 
@@ -30,7 +45,7 @@ export default function TripModal({ selectedTrip, onClose, onEdit, onDelete }: T
             onClick={onClose}
         >
             <div
-                className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative"
+                className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative max-h-[85vh] overflow-y-auto"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Close button */}
@@ -57,6 +72,28 @@ export default function TripModal({ selectedTrip, onClose, onEdit, onDelete }: T
 
                 {selectedTrip.notes && (
                     <p className="italic text-gray-700 mb-4">“{selectedTrip.notes}”</p>
+                )}
+
+                {/* Map for this trip */}
+                {selectedTrip.latitude && selectedTrip.longitude && (
+                    <div className="h-64 w-full mb-4 rounded overflow-hidden">
+                        <MapContainer
+                            center={[selectedTrip.latitude, selectedTrip.longitude]}
+                            zoom={6}
+                            style={{ height: "100%", width: "100%" }}
+                            scrollWheelZoom={false}
+                        >
+                            <TileLayer
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                            />
+                            <Marker
+                                position={[selectedTrip.latitude, selectedTrip.longitude]}
+                            >
+                                <Popup>{selectedTrip.destination}</Popup>
+                            </Marker>
+                        </MapContainer>
+                    </div>
                 )}
 
                 {/* Actions inside modal */}

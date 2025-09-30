@@ -170,7 +170,7 @@ function App() {
         />
       )}
 
-      <MapView trips={trips} selectedTrip={selectedTrip} />
+      {!selectedTrip && <MapView trips={trips} selectedTrip={selectedTrip} />}
     </div>
   );
 }

@@ -4,6 +4,6 @@ export interface Trip {
   startDate: Date;
   endDate: Date;
   notes?: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
 }
