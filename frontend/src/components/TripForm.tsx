@@ -51,16 +51,6 @@ export default function TripForm({
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
-     // Convert string dates → Date objects
-    const formattedData = {
-      destination: formData.destination,
-      startDate: new Date(formData.startDate),
-      endDate: new Date(formData.endDate),
-      notes: formData.notes,
-      latitude: parseFloat(formData.latitude),
-      longitude: parseFloat(formData.longitude),
-    };
-
     // date validation
     if (new Date(formData.endDate) < new Date(formData.startDate)) {
       setError("End date cannot be before start date.");
@@ -69,16 +59,18 @@ export default function TripForm({
 
     setError(null);
 
-    const parsedLatitude = parseFloat(formData.latitude);
-    const parsedLongitude = parseFloat(formData.longitude);
-
-    if (isNaN(parsedLatitude) || isNaN(parsedLongitude)) {
-      alert("Please enter valid latitude and longitude values.");
-      return;
-    }
+    const formattedData = {
+      destination: formData.destination,
+      startDate: new Date(formData.startDate),
+      endDate: new Date(formData.endDate),
+      notes: formData.notes,
+    };
 
     if (editingTrip) {
-      // Update existing
+      // Allow manual lat/lon edits only here
+      const parsedLatitude = formData.latitude ? parseFloat(formData.latitude) : editingTrip.latitude;
+      const parsedLongitude = formData.longitude ? parseFloat(formData.longitude) : editingTrip.longitude;
+
       onUpdateTrip({
         ...editingTrip,
         ...formattedData,
@@ -87,11 +79,9 @@ export default function TripForm({
       });
       setEditingTrip(null);
     } else {
-      // Add new
+      // Add new, no need to include lat/lon — backend will geocode
       onAddTrip({
         ...formattedData,
-        latitude: parsedLatitude,
-        longitude: parsedLongitude,
       } as Omit<Trip, "_id">);
     }
 
@@ -149,26 +139,31 @@ export default function TripForm({
       />
 
       {/* Latitude & Longitude fields */}
-      <div className="flex gap-2">
-        <input
-          type="number"
-          step="any"
-          placeholder="Latitude"
-          value={formData.latitude}
-          onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-          className="p-2 border rounded w-1/2"
-          required
-        />
-        <input
-          type="number"
-          step="any"
-          placeholder="Longitude"
-          value={formData.longitude}
-          onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-          className="p-2 border rounded w-1/2"
-          required
-        />
-      </div>
+      {editingTrip && (
+        <>
+          <div className="flex gap-2">
+            <input
+              type="number"
+              step="any"
+              placeholder="Latitude"
+              value={formData.latitude}
+              onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
+              className="p-2 border rounded w-1/2"
+            />
+            <input
+              type="number"
+              step="any"
+              placeholder="Longitude"
+              value={formData.longitude}
+              onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+              className="p-2 border rounded w-1/2"
+            />
+          </div>
+          <p className="text-xs text-gray-500">
+            You can manually adjust coordinates if geocoding was inaccurate.
+          </p>
+        </>
+      )}
 
       {/* Error message */}
       {error && <p className="text-red-500 text-sm">{error}</p>}
@@ -178,9 +173,9 @@ export default function TripForm({
           type="submit"
           className={`font-semibold py-2 rounded flex-1 ${
             editingTrip
-              ? "bg-yellow-500 hover:bg-yellow-600 text-black"
-              : "bg-blue-500 hover:bg-blue-700 text-white"
-          }`}
+            ? "bg-yellow-500 hover:bg-yellow-600 text-black"
+            : "bg-blue-500 hover:bg-blue-700 text-white"
+            }`}
         >
           {editingTrip ? "Save" : "Add Trip"}
         </button>

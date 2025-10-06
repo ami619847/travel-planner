@@ -1,7 +1,31 @@
 import express, { Request, Response } from "express";
 import { TripModel } from "../models/Trip";
+import axios from "axios";
 
 const router = express.Router();
+
+// Helper: fetch coordinates from OpenStreetMap
+async function geocodeDestination(destination: string) {
+  try {
+    const geoRes = await axios.get("https://nominatim.openstreetmap.org/search", {
+      params: {
+        q: destination,
+        format: "json",
+        limit: 1,
+      },
+    });
+
+    if (geoRes.data && geoRes.data.length > 0) {
+      return {
+        latitude: parseFloat(geoRes.data[0].lat),
+        longitude: parseFloat(geoRes.data[0].lon),
+      };
+    }
+  } catch (err) {
+    console.error("Geocoding error:", err);
+  }
+  return { latitude: null, longitude: null };
+}
 
 // GET all trips
 router.get("/", async (_req: Request, res: Response) => {
@@ -16,7 +40,28 @@ router.get("/", async (_req: Request, res: Response) => {
 // POST new trip
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const newTrip = new TripModel(req.body);
+    const { destination, startDate, endDate, notes, latitude, longitude } = req.body;
+
+    let finalLat = latitude;
+    let finalLng = longitude;
+
+    // Only geocode if lat/lng are not provided
+    if ((latitude === undefined || latitude === null || latitude === "") &&
+        (longitude === undefined || longitude === null || longitude === "")) {
+      const geo = await geocodeDestination(destination);
+      finalLat = geo.latitude;
+      finalLng = geo.longitude;
+    }
+
+    const newTrip = new TripModel({
+      destination,
+      startDate,
+      endDate,
+      notes,
+      latitude: finalLat,
+      longitude: finalLng,
+    });
+
     const savedTrip = await newTrip.save();
     res.json(savedTrip);
   } catch (err) {
@@ -27,7 +72,22 @@ router.post("/", async (req: Request, res: Response) => {
 // PUT update trip
 router.put("/:id", async (req: Request, res: Response) => {
   try {
-    const updatedTrip = await TripModel.findByIdAndUpdate(req.params.id, req.body, {
+    const { destination, startDate, endDate, notes, latitude, longitude } = req.body;
+
+    let updateData: any = { destination, startDate, endDate, notes };
+
+    if (latitude !== undefined && longitude !== undefined) {
+      // Manual override
+      updateData.latitude = latitude;
+      updateData.longitude = longitude;
+    } else if (destination) {
+      // Destination changed → re-geocode
+      const geo = await geocodeDestination(destination);
+      updateData.latitude = geo.latitude;
+      updateData.longitude = geo.longitude;
+    }
+
+    const updatedTrip = await TripModel.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true,
     });

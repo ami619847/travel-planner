@@ -11,7 +11,7 @@ interface MapViewProps {
 const defaultCenter = { lat: 20, lng: 0 }; // Default world view
 
 export default function MapView({ trips, selectedTrip }: MapViewProps) {
-    const center = selectedTrip
+    const center = selectedTrip && selectedTrip.latitude && selectedTrip.longitude
         ? { lat: selectedTrip.latitude, lng: selectedTrip.longitude }
         : defaultCenter;
 
