@@ -7,6 +7,7 @@ import TripList from "./components/TripList";
 import TripForm from "./components/TripForm";
 import MapView from "./components/MapView";
 import axios from "axios";
+import Toast from "./components/Toast";
 
 function App() {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -16,6 +17,7 @@ function App() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null); 
 
   useEffect(() => {
     const fetchTrips = async () => {
@@ -25,6 +27,7 @@ function App() {
         setTrips(res.data);
       } catch (err) {
         console.error("Error fetching trips:", err);
+        setToast({ message: "Failed to load trips", type: "error" });
       } finally {
         setLoading(false); // stop spinner
       }
@@ -37,8 +40,11 @@ function App() {
     try {
       const res = await postTrip(formData);
       setTrips([...trips, res.data]);
+      setToast({ message: "Trip added successfully", type: "success" });
     } catch (err: unknown) {
       console.error("Error creating trip:", err);
+      setToast({ message: "Failed to add trip", type: "error" });
+
       if (axios.isAxiosError(err)) {
         const message = err.response?.data?.error || "Failed to create trip. Please try again.";
         alert(message);
@@ -55,8 +61,11 @@ function App() {
     try {
       await deleteTrip(id);
       setTrips(trips.filter((trip) => trip._id !== id));
+      setToast({ message: "Trip deleted", type: "success" });
     } catch (err: unknown) {
       console.error("Error deleting trip:", err);
+      setToast({ message: "Failed to delete trip", type: "error" });
+
       if (axios.isAxiosError(err)) {
         const message = err.response?.data?.error || "Failed to delete trip. Please try again.";
         alert(message);
@@ -73,8 +82,11 @@ function App() {
       const res = await updateTrip(trip._id!, trip);
       setTrips(trips.map((t) => (t._id === trip._id ? res.data : t)));
       setEditingTrip(null); // reset editing mode
+      setToast({ message: "Trip updated", type: "success" });
     } catch (err: unknown) {
       console.error("Error updating trip:", err);
+      setToast({ message: "Failed to update trip", type: "error" });
+
       if (axios.isAxiosError(err)) {
         const message = err.response?.data?.error || "Failed to update trip. Please try again.";
         alert(message);
@@ -196,6 +208,15 @@ function App() {
       )}
 
       {!selectedTrip && <MapView trips={trips} selectedTrip={selectedTrip} />}
+
+      {/* Toast display */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

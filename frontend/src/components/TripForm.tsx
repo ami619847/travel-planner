@@ -1,5 +1,6 @@
-import { useEffect, useState, FormEvent } from "react";
+import { useEffect, useState, FormEvent, useRef } from "react";
 import { Trip } from "../../../types/Trip";
+import axios from "axios";
 
 interface TripFormProps {
   onAddTrip: (formData: Omit<Trip, "_id">) => void;
@@ -24,8 +25,12 @@ export default function TripForm({
   });
 
   const [error, setError] = useState<string | null>(null);
+  const [geoStatus, setGeoStatus] = useState<"idle" | "loading" | "failed" | "success">("idle");
 
-  // sync form with editingTrip when editing
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const initialDestination = useRef<string | null>(null);
+
+  // sync form with editingTrip
   useEffect(() => {
     if (editingTrip) {
       setFormData({
@@ -36,6 +41,7 @@ export default function TripForm({
         latitude: editingTrip.latitude?.toString() || "",
         longitude: editingTrip.longitude?.toString() || "",
       });
+      initialDestination.current = editingTrip.destination;
     } else {
       setFormData({
         destination: "",
@@ -45,8 +51,44 @@ export default function TripForm({
         latitude: "",
         longitude: "",
       });
+      initialDestination.current = null;
     }
   }, [editingTrip]);
+
+  // Auto geocode destination when editing if changed
+  useEffect(() => {
+    if (!editingTrip) return;
+
+    const dest = formData.destination.trim();
+    if (!dest || dest === initialDestination.current) return;
+
+    // debounce geocoding
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+    debounceTimer.current = setTimeout(async () => {
+      try {
+        setGeoStatus("loading");
+        const res = await axios.get("https://nominatim.openstreetmap.org/search", {
+          params: { q: dest, format: "json", limit: 1 },
+        });
+
+        const data = res.data;
+        if (Array.isArray(data) && data.length > 0) {
+          setFormData((prev) => ({
+            ...prev,
+            latitude: data[0].lat,
+            longitude: data[0].lon,
+          }));
+          setGeoStatus("success");
+        } else {
+          setGeoStatus("failed");
+        }
+      } catch (err) {
+        console.error("Geocoding error:", err);
+        setGeoStatus("failed");
+      }
+    }, 600);
+  }, [formData.destination, editingTrip]);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -94,6 +136,7 @@ export default function TripForm({
       latitude: "",
       longitude: "",
     });
+    setGeoStatus("idle");
   };
 
   return (
@@ -107,14 +150,27 @@ export default function TripForm({
         <h2 className="text-xl font-semibold text-yellow-600">Edit Trip</h2>
       )}
 
-      <input
-        type="text"
-        placeholder="Destination"
-        value={formData.destination}
-        onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-        className="p-2 border rounded"
-        required
-      />
+      <div className="relative">
+        <input
+          type="text"
+          placeholder="Destination"
+          value={formData.destination}
+          onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
+          className="p-2 border rounded w-full"
+          required
+        />
+        {geoStatus === "loading" && (
+          <span className="absolute right-3 top-2 text-gray-400 text-sm italic">
+            Geocoding…
+          </span>
+        )}
+        {geoStatus === "failed" && (
+          <span className="absolute right-3 top-2 text-red-500 text-sm italic">
+            Not found
+          </span>
+        )}
+      </div>
+
       <div className="flex gap-2">
         <input
           type="date"
@@ -131,6 +187,7 @@ export default function TripForm({
           required
         />
       </div>
+
       <textarea
         placeholder="Notes"
         value={formData.notes}
@@ -173,9 +230,9 @@ export default function TripForm({
           type="submit"
           className={`font-semibold py-2 rounded flex-1 ${
             editingTrip
-            ? "bg-yellow-500 hover:bg-yellow-600 text-black"
-            : "bg-blue-500 hover:bg-blue-700 text-white"
-            }`}
+              ? "bg-yellow-500 hover:bg-yellow-600 text-black"
+              : "bg-blue-500 hover:bg-blue-700 text-white"
+          }`}
         >
           {editingTrip ? "Save" : "Add Trip"}
         </button>
