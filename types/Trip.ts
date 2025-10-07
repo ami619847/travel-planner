@@ -6,4 +6,5 @@ export interface Trip {
   notes?: string;
   latitude?: number;
   longitude?: number;
+  geocodingFailed?: boolean;
 }

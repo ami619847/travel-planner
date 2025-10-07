@@ -15,16 +15,28 @@ async function geocodeDestination(destination: string) {
       },
     });
 
-    if (geoRes.data && geoRes.data.length > 0) {
-      return {
-        latitude: parseFloat(geoRes.data[0].lat),
-        longitude: parseFloat(geoRes.data[0].lon),
-      };
+    const data = geoRes.data;
+
+    if (Array.isArray(data) && data.length > 0) {
+      const result = data[0];
+
+      // check if the display_name contains the query (basic relevance check)
+      const isRelevant =
+        destination.length > 2 &&
+        result.display_name.toLowerCase().includes(destination.toLowerCase());
+
+      if (isRelevant) {
+        return {
+          latitude: parseFloat(result.lat),
+          longitude: parseFloat(result.lon),
+          failed: false,
+        };
+      }
     }
   } catch (err) {
     console.error("Geocoding error:", err);
   }
-  return { latitude: null, longitude: null };
+  return { latitude: null, longitude: null, failed: true };
 }
 
 // GET all trips
@@ -44,6 +56,7 @@ router.post("/", async (req: Request, res: Response) => {
 
     let finalLat = latitude;
     let finalLng = longitude;
+    let geocodingFailed = false;
 
     // Only geocode if lat/lng are not provided
     if ((latitude === undefined || latitude === null || latitude === "") &&
@@ -51,6 +64,13 @@ router.post("/", async (req: Request, res: Response) => {
       const geo = await geocodeDestination(destination);
       finalLat = geo.latitude;
       finalLng = geo.longitude;
+      geocodingFailed = geo.failed ?? false;
+
+      if (geocodingFailed) {
+        return res.status(400).json({
+          error: `Could not geocode destination "${destination}". Please enter valid coordinates manually.`,
+        });
+      }
     }
 
     const newTrip = new TripModel({
@@ -63,8 +83,9 @@ router.post("/", async (req: Request, res: Response) => {
     });
 
     const savedTrip = await newTrip.save();
-    res.json(savedTrip);
+    res.json({ ...savedTrip.toObject(), geocodingFailed });
   } catch (err) {
+    console.error("Error creating trip:", err);
     res.status(500).json({ error: "Failed to create trip" });
   }
 });
@@ -75,6 +96,7 @@ router.put("/:id", async (req: Request, res: Response) => {
     const { destination, startDate, endDate, notes, latitude, longitude } = req.body;
 
     let updateData: any = { destination, startDate, endDate, notes };
+    let geocodingFailed = false;
 
     if (latitude !== undefined && longitude !== undefined) {
       // Manual override
@@ -85,6 +107,13 @@ router.put("/:id", async (req: Request, res: Response) => {
       const geo = await geocodeDestination(destination);
       updateData.latitude = geo.latitude;
       updateData.longitude = geo.longitude;
+      geocodingFailed = geo.failed ?? false;
+
+      if (geocodingFailed) {
+        return res.status(400).json({
+          error: `Could not geocode destination "${destination}". Please enter valid coordinates manually.`,
+        });
+      }
     }
 
     const updatedTrip = await TripModel.findByIdAndUpdate(req.params.id, updateData, {
@@ -92,8 +121,9 @@ router.put("/:id", async (req: Request, res: Response) => {
       runValidators: true,
     });
     if (!updatedTrip) return res.status(404).json({ error: "Trip not found" });
-    res.json(updatedTrip);
+    res.json({ ...updatedTrip.toObject(), geocodingFailed });
   } catch (err) {
+    console.error("Error updating trip:", err);
     res.status(500).json({ error: "Failed to update trip" });
   }
 });

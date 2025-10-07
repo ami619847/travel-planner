@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react" ;
+import { useEffect, useState } from "react";
 import './App.css'
 import { getTrips, postTrip, deleteTrip, updateTrip } from "./api";
 import { Trip } from "../../types/Trip";
@@ -6,6 +6,7 @@ import TripModal from "./components/TripModal";
 import TripList from "./components/TripList";
 import TripForm from "./components/TripForm";
 import MapView from "./components/MapView";
+import axios from "axios";
 
 function App() {
   const [trips, setTrips] = useState<Trip[]>([]);
@@ -36,8 +37,16 @@ function App() {
     try {
       const res = await postTrip(formData);
       setTrips([...trips, res.data]);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error creating trip:", err);
+      if (axios.isAxiosError(err)) {
+        const message = err.response?.data?.error || "Failed to create trip. Please try again.";
+        alert(message);
+      } else if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert("Unexpected error occurred.");
+      }
     }
   };
 
@@ -46,8 +55,16 @@ function App() {
     try {
       await deleteTrip(id);
       setTrips(trips.filter((trip) => trip._id !== id));
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error deleting trip:", err);
+      if (axios.isAxiosError(err)) {
+        const message = err.response?.data?.error || "Failed to delete trip. Please try again.";
+        alert(message);
+      } else if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert("Unexpected error occurred.");
+      }
     }
   };
 
@@ -56,8 +73,16 @@ function App() {
       const res = await updateTrip(trip._id!, trip);
       setTrips(trips.map((t) => (t._id === trip._id ? res.data : t)));
       setEditingTrip(null); // reset editing mode
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error updating trip:", err);
+      if (axios.isAxiosError(err)) {
+        const message = err.response?.data?.error || "Failed to update trip. Please try again.";
+        alert(message);
+      } else if (err instanceof Error) {
+        alert(err.message);
+      } else {
+        alert("Unexpected error occurred.");
+      }
     }
   };
 
@@ -175,4 +200,4 @@ function App() {
   );
 }
 
-export default App
+export default App;
