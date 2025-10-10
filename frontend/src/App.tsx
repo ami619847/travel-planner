@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import './App.css'
 import { getTrips, postTrip, deleteTrip, updateTrip } from "./api";
 import { Trip } from "../../types/Trip";
@@ -12,13 +13,35 @@ import Toast from "./components/Toast";
 function App() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
-  const [filter, setFilter] = useState<"all" | "upcoming" | "past">("upcoming");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [searchTerm, setSearchTerm] = useState("");
   const [selectedTrip, setSelectedTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null); 
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Initialize from URL params
+  const initialFilter = (searchParams.get("filter") as "all" | "upcoming" | "past") || "upcoming";
+  const initialSort = (searchParams.get("sort") as "asc" | "desc") || "asc";
+  const initialSearch = searchParams.get("q") || "";
+  // 
+  const [filter, setFilter] = useState<"all" | "upcoming" | "past">(initialFilter);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">(initialSort);
+  const [searchTerm, setSearchTerm] = useState(initialSearch);
 
+  // Sync state → URL (with debounce for search)
+  useEffect(() => {
+    const params: Record<string, string> = {};
+    if (filter !== "upcoming") params.filter = filter;
+    if (sortOrder !== "asc") params.sort = sortOrder;
+
+    const timeout = setTimeout(() => {
+      if (searchTerm.trim() !== "") params.q = searchTerm;
+      setSearchParams(params);
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [filter, sortOrder, searchTerm, setSearchParams]);
+
+  // Fetch trips
   useEffect(() => {
     const fetchTrips = async () => {
       try {
@@ -120,30 +143,17 @@ function App() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3 bg-gray-100 p-3 rounded-lg">
         {/* Filter */}
         <div className="flex gap-2 justify-center sm:justify-start">
-          <button
-            onClick={() => setFilter("all")}
-            className={`px-3 py-1 rounded font-semibold ${
-              filter === "all" ? "bg-blue-600 text-white" : "bg-white text-gray-700 border"
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setFilter("upcoming")}
-            className={`px-3 py-1 rounded font-semibold ${
-              filter === "upcoming" ? "bg-blue-600 text-white" : "bg-white text-gray-700 border"
-            }`}
-          >
-            Upcoming
-          </button>
-          <button
-            onClick={() => setFilter("past")}
-            className={`px-3 py-1 rounded font-semibold ${
-              filter === "past" ? "bg-blue-600 text-white" : "bg-white text-gray-700 border"
-            }`}
-          >
-            Past
-          </button>
+          {(["all", "upcoming", "past"] as const).map((type) => (
+            <button
+              key = {type}
+              onClick={() => setFilter(type)}
+              className={`px-3 py-1 rounded font-semibold ${
+                filter === type ? "bg-blue-600 text-white" : "bg-white text-gray-700 border"
+              }`}
+            >
+              {type.charAt(0).toUpperCase() + type.slice(1)}
+            </button>
+          ))}
         </div>
 
         {/* Search Box */}
@@ -177,6 +187,23 @@ function App() {
           </button>
         </div>
       </div>
+
+      {/* Reset Filters Button */}
+      {(filter !== "upcoming" || sortOrder !== "asc" || searchTerm.trim() !== "") && (
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={() => {
+              setFilter("upcoming");
+              setSortOrder("asc");
+              setSearchTerm("");
+              window.history.replaceState({}, document.title, window.location.pathname);
+            }}
+            className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold"
+          >
+            Reset Filters
+          </button>
+        </div>
+      )}
 
       {/* Add/Edit trip form */}
       <TripForm
