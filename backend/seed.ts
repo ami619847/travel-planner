@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import { Trip } from "../types/Trip";
-import { TripModel } from "./server";
+import { TripModel } from "./models/Trip";
 
 dotenv.config();
 
